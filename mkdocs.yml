@@ -37,6 +37,8 @@ markdown_extensions:
   - admonition
   - attr_list
   - def_list
+  - toc:
+      title: On this page
   - pymdownx.details
   - pymdownx.highlight:
       anchor_linenums: true
