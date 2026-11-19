@@ -1,42 +1,39 @@
 <div class="home-hero">
   <div class="hero-copy">
-    <div class="eyebrow">Technical learning guide | 19 November 2026</div>
-    <h1>AWS Cognito<br><span>vs AWS IAM</span></h1>
-    <p class="hero-subtitle">A complete practical tutorial</p>
-    <p class="hero-lede">Understand exactly where authentication ends, where authorisation begins, and how identity, tokens, roles, policies, and application-level permissions work together.</p>
+    <div class="eyebrow">AWS IDENTITY &amp; SECURITY | Updated 19 November 2026</div>
+    <h1>Amazon Cognito<br><span>vs AWS IAM</span></h1>
+    <p class="hero-subtitle">An in-depth course from first principles to production architecture</p>
+    <p class="hero-lede">Detailed reasoning, fully traced requests, annotated policies and security exercises.</p>
   </div>
   <div class="hero-visual">
-    <div class="visual-top">Built around three realistic deployments</div>
+    <div class="visual-top">Expanded edition</div>
     <ol class="deployment-list">
-      <li>React + FastAPI + Cognito User Pool + PostgreSQL + S3</li>
-      <li>Direct browser-to-S3 access through Cognito Identity Pool + IAM</li>
-      <li>FastAPI on AWS ECS using task IAM roles to access AWS services</li>
+      <li>01 — Understand the boundary</li>
+      <li>02 — Follow the request</li>
+      <li>03 — Build securely</li>
     </ol>
   </div>
 </div>
 
-From fundamentals to production patterns, with architecture diagrams, working policy patterns, debugging strategies, review questions, and guided exercises.
+Expanded edition · Detailed architecture sequences · Realistic React/FastAPI/ECS scenarios · Policy walkthroughs · Hands-on labs with expected results
 
-## Contents
+## LEARNING PATH
 
-Begin with chapters 1–5 for the essential mental model; then choose the architecture and lab most relevant to your application. All code contains illustrative placeholders.
+### Contents
 
-- [Contents](#contents) 2
-- [1. The boundary: authentication is not the same as authorisation](foundations.md#1-the-boundary-authentication-is-not-the-same-as-authorisation) 3
-- [2. Who uses which AWS identity service?](foundations.md#2-who-uses-which-aws-identity-service) 4
-- [3. Cognito User Pools: the application login system](cognito.md#3-cognito-user-pools-the-application-login-system) 4
-- [4. Cognito Identity Pools: the bridge to AWS credentials](cognito.md#4-cognito-identity-pools-the-bridge-to-aws-credentials) 5
-- [5. IAM foundations: principal, action, resource, condition](iam.md#5-iam-foundations-principal-action-resource-condition) 6
-- [6. IAM role assumption: trust policy vs permissions policy](iam.md#6-iam-role-assumption-trust-policy-vs-permissions-policy) 7
-- [7. IAM evaluation: why an Allow may still be denied](iam.md#7-iam-evaluation-why-an-allow-may-still-be-denied) 8
-- [8. Architecture A: React + Cognito + FastAPI + PostgreSQL](architecture-api.md#8-architecture-a-react-cognito-fastapi-postgresql) 9
-- [9. Architecture B: direct S3 access with Identity Pools](architecture-s3.md#9-architecture-b-direct-s3-access-with-identity-pools) 12
-- [10. Architecture C: roles for AWS workloads and microservices](architecture-workloads.md#10-architecture-c-roles-for-aws-workloads-and-microservices) 13
-- [11. Advanced IAM: least privilege, ABAC, and federation](advanced-iam.md#11-advanced-iam-least-privilege-abac-and-federation) 14
-- [12. Advanced application authorisation: groups are not enough](application-authorization.md#12-advanced-application-authorisation-groups-are-not-enough) 15
-- [13. Realistic setup walkthrough: secure SaaS API](walkthrough.md#13-realistic-setup-walkthrough-secure-saas-api) 16
-- [14. Guided labs: learn by doing](labs.md#14-guided-labs-learn-by-doing) 17
-- [15. Troubleshooting playbook](troubleshooting.md#15-troubleshooting-playbook) 19
-- [16. Security checklist and common mistakes](security.md#16-security-checklist-and-common-mistakes) 20
-- [17. Knowledge check: 12 questions with answers](knowledge-check.md#17-knowledge-check-12-questions-with-answers) 20
-- [18. Decision matrix, glossary, and official reading](reference.md#18-decision-matrix-glossary-and-official-reading) 21
+Expanded learning edition: work through Chapters 1-5 for the fundamental boundaries, Chapters 6-9 for production implementation, and Chapters 10-12 for guided labs and scenario-based review.
+
+- [01 The boundary in 60 seconds](chapter-01.md) — The correct mental model
+- [02 The four identities you must distinguish](chapter-02.md) — Users, roles, tokens and credentials
+- [03 Cognito User Pools, explained](chapter-03.md) — Authentication and application-facing tokens
+- [04 IAM fundamentals and advanced controls](chapter-04.md) — AWS principals and policy decisions
+- [05 Cognito Identity Pools and STS](chapter-05.md) — Why Cognito can lead to IAM permissions
+- [06 Architecture A: React + FastAPI + ECS](chapter-06.md) — Recommended backend-mediated SaaS pattern
+- [07 Architecture B: browser-to-S3 access](chapter-07.md) — Using identity pools and IAM together
+- [08 Workloads, staff access and federation](chapter-08.md) — ECS, machine-to-machine and Identity Center
+- [09 Advanced authorisation and tenancy](chapter-09.md) — Scopes, groups, ABAC and permissions boundaries
+- [10 Hands-on learning labs](chapter-10.md) — Build and test the concepts
+- [11 Common mistakes and troubleshooting](chapter-11.md) — Diagnose AccessDenied and token errors
+- [12 Decision framework and knowledge check](chapter-12.md) — Select the right identity mechanism
+
+All identifiers, account numbers and bucket names in this guide are illustrative. Replace placeholders with your own AWS resources when practising.

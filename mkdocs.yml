@@ -1,5 +1,5 @@
 site_name: AWS Cognito + IAM Tutorial
-site_description: A practical guide to Cognito, IAM, and application authorization.
+site_description: An in-depth course on Cognito, IAM, and application authorisation, from first principles to production architectures.
 site_url: https://saleh-sha.github.io/AWS-Cognito-IAM-Tutorial/
 repo_url: https://github.com/saleh-SHA/AWS-Cognito-IAM-Tutorial
 repo_name: saleh-SHA/AWS-Cognito-IAM-Tutorial
@@ -47,25 +47,16 @@ markdown_extensions:
   - tables
 nav:
   - Overview: index.md
-  - Foundations:
-      - Authentication vs authorization: foundations.md
-  - Cognito:
-      - User Pools and Identity Pools: cognito.md
-  - IAM:
-      - Policies, roles, and evaluation: iam.md
-      - Advanced IAM: advanced-iam.md
-      - Application authorization: application-authorization.md
-  - Architectures:
-      - API-backed SaaS: architecture-api.md
-      - Direct browser-to-S3: architecture-s3.md
-      - Workloads and microservices: architecture-workloads.md
-  - Build and operate:
-      - Secure SaaS walkthrough: walkthrough.md
-      - Guided labs: labs.md
-      - Troubleshooting: troubleshooting.md
-      - Security checklist: security.md
-  - Reference:
-      - Knowledge check: knowledge-check.md
-      - Decision matrix and glossary: reference.md
-      - Download the PDF: AWS_Cognito_vs_IAM_Practical_Tutorial.pdf
-
+  - Chapter 1: chapter-01.md
+  - Chapter 2: chapter-02.md
+  - Chapter 3: chapter-03.md
+  - Chapter 4: chapter-04.md
+  - Chapter 5: chapter-05.md
+  - Chapter 6: chapter-06.md
+  - Chapter 7: chapter-07.md
+  - Chapter 8: chapter-08.md
+  - Chapter 9: chapter-09.md
+  - Chapter 10: chapter-10.md
+  - Chapter 11: chapter-11.md
+  - Chapter 12: chapter-12.md
+  - Download the PDF: AWS_Cognito_vs_IAM_Expanded_Deep_Dive_Tutorial.pdf
