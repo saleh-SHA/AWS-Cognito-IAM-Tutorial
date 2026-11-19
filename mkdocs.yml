@@ -1,0 +1,62 @@
+site_name: AWS Cognito + IAM Tutorial
+site_description: A practical guide to Cognito, IAM, and application authorization.
+site_url: https://saleh-sha.github.io/AWS-Cognito-IAM-Tutorial/
+repo_url: https://github.com/saleh-SHA/AWS-Cognito-IAM-Tutorial
+repo_name: saleh-SHA/AWS-Cognito-IAM-Tutorial
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.tracking
+    - content.code.copy
+    - content.action.edit
+    - search.suggest
+    - search.highlight
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: cyan
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: cyan
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - tables
+nav:
+  - Overview: index.md
+  - Foundations:
+      - Authentication vs authorization: foundations.md
+  - Cognito:
+      - User Pools and Identity Pools: cognito.md
+  - IAM:
+      - Policies, roles, and evaluation: iam.md
+      - Advanced IAM: advanced-iam.md
+      - Application authorization: application-authorization.md
+  - Architectures:
+      - API-backed SaaS: architecture-api.md
+      - Direct browser-to-S3: architecture-s3.md
+      - Workloads and microservices: architecture-workloads.md
+  - Build and operate:
+      - Secure SaaS walkthrough: walkthrough.md
+      - Guided labs: labs.md
+      - Troubleshooting: troubleshooting.md
+      - Security checklist: security.md
+  - Reference:
+      - Knowledge check: knowledge-check.md
+      - Decision matrix and glossary: reference.md
+      - Download the PDF: AWS_Cognito_vs_IAM_Practical_Tutorial.pdf
+
