@@ -1,7 +1,6 @@
 ---
 hide:
   - toc
-  - edit
 ---
 
 <div class="home-hero">
