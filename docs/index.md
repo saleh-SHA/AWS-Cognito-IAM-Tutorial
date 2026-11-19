@@ -1,3 +1,9 @@
+---
+hide:
+  - toc
+  - edit
+---
+
 <div class="home-hero">
   <div class="hero-copy">
     <div class="eyebrow"><span class="eyebrow-dot"></span> FIELD GUIDE&nbsp; / &nbsp;IDENTITY + ACCESS</div>
