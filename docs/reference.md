@@ -17,17 +17,25 @@
 
 ## Official AWS documentation
 
-- [Amazon Cognito developer guide](https://docs.aws.amazon.com/cognito/latest/developerguide/)
+### Cognito
+
+- [Cognito developer guide](https://docs.aws.amazon.com/cognito/latest/developerguide/)
 - [How Cognito authentication works](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-how-to-authenticate.html)
-- [User Pools with Identity Pools](https://docs.aws.amazon.com/cognito/latest/developerguide/amazon-cognito-integrating-user-pools-with-identity-pools.html)
-- [Cognito Identity Pool role trust](https://docs.aws.amazon.com/cognito/latest/developerguide/iam-roles.html)
-- [Verifying Cognito JWTs](https://docs.aws.amazon.com/cognito/latest/developerguide/amazon-cognito-user-pools-using-tokens-verifying-a-jwt.html)
+- [Connect User Pools to Identity Pools](https://docs.aws.amazon.com/cognito/latest/developerguide/amazon-cognito-integrating-user-pools-with-identity-pools.html)
+- [Identity Pool role trust](https://docs.aws.amazon.com/cognito/latest/developerguide/iam-roles.html)
+- [Verify Cognito JWTs](https://docs.aws.amazon.com/cognito/latest/developerguide/amazon-cognito-user-pools-using-tokens-verifying-a-jwt.html)
+
+### IAM and ECS
+
 - [IAM concepts](https://docs.aws.amazon.com/IAM/latest/UserGuide/intro-structure.html)
-- [IAM policy evaluation logic](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html)
+- [IAM policy evaluation](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html)
 - [IAM best practices](https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html)
-- [ECS task IAM roles](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-iam-roles.html)
+- [ECS task roles](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-iam-roles.html)
 - [ECS task execution role](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_execution_IAM_role.html)
 - [S3 policy example for Cognito](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_examples_s3_cognito-bucket.html)
+
+### Application authorization
+
 - [Amazon Verified Permissions](https://docs.aws.amazon.com/verifiedpermissions/latest/userguide/)
 
 ## Final mental model

@@ -2,7 +2,7 @@
 
 ## User Pools: application login
 
-A User Pool is a managed user directory and an OAuth 2.0 / OpenID Connect identity provider. It can manage local users; federate Google, Microsoft, SAML, and OIDC identities; issue JWTs; and apply MFA, account lifecycle, and app-client configuration.
+A User Pool is a managed user directory and an OAuth 2.0 / OpenID Connect identity provider. It can manage local users; federate Google, Microsoft, SAML, and OIDC identities; issue JWTs; and apply MFA, account lifecycle, and app-client configuration. See the [Cognito User Pool guide](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools.html) for the full feature set.
 
 ### The three important tokens
 
@@ -12,7 +12,7 @@ A User Pool is a managed user directory and an OAuth 2.0 / OpenID Connect identi
 | Access token | Access to protected APIs and OAuth scopes | Validate signature, issuer, time, `token_use=access`, and client. |
 | Refresh token | Obtains fresh tokens subject to session rules | Handle securely; never send as an API bearer token. |
 
-A User Pool app client identifies the application, not a human. For public browser/mobile clients, use a public client without a client secret and prefer authorization code flow with PKCE. A confidential backend client can hold its secret server-side.
+A User Pool app client identifies the application, not a human. For public browser/mobile clients, use a public client without a client secret and prefer authorization code flow with PKCE. A confidential backend client can hold its secret server-side. The [Cognito token guide](https://docs.aws.amazon.com/cognito/latest/developerguide/amazon-cognito-user-pools-using-tokens-verifying-a-jwt.html) covers token validation.
 
 ```mermaid
 sequenceDiagram
@@ -36,7 +36,7 @@ sequenceDiagram
 
 ## Identity Pools: bridge to AWS credentials
 
-An Identity Pool is different from a User Pool. It can accept a User Pool token or other supported identity evidence, select a role, and obtain temporary AWS credentials (commonly through AWS STS). Those credentials sign AWS API requests, which IAM evaluates.
+An Identity Pool is different from a User Pool. It can accept a User Pool token or other supported identity evidence, select a role, and obtain temporary AWS credentials (commonly through AWS STS). Those credentials sign AWS API requests, which IAM evaluates. See [connecting User Pools to Identity Pools](https://docs.aws.amazon.com/cognito/latest/developerguide/amazon-cognito-integrating-user-pools-with-identity-pools.html) for the supported flow.
 
 ```mermaid
 flowchart LR

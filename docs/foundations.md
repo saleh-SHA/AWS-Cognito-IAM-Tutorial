@@ -32,7 +32,7 @@ If the browser calls your API to read a PostgreSQL row, the backend must decide 
 | IAM user | Exceptional programmatic or legacy cases | Long-lived identity; generally avoid long-term access keys |
 | IAM Identity Center | Workforce and AWS console users | Workforce SSO/federation into AWS accounts and apps |
 
-When an SDK sends a request to S3, it normally signs the request with Signature Version 4 (SigV4). AWS identifies the principal (often an assumed role session), then evaluates permissions. An IAM role has no permanent password or access key; AWS STS-backed sessions provide short-lived credentials. A Cognito User Pool JWT is a bearer token for application identity or OAuth-protected APIs, not an AWS access key.
+When an SDK sends a request to S3, it normally signs the request with Signature Version 4 (SigV4). AWS identifies the principal (often an assumed role session), then evaluates permissions. An IAM role has no permanent password or access key; AWS STS-backed sessions provide short-lived credentials. A Cognito User Pool JWT is a bearer token for application identity or OAuth-protected APIs, not an AWS access key. See AWS's guide to [signing API requests with SigV4](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_sigv.html).
 
 Engineers entering the AWS console should normally use IAM Identity Center or workforce federation. Cognito is generally for application consumers; Identity Center is generally for the organization's workforce.
 

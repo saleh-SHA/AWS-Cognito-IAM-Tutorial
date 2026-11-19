@@ -13,7 +13,7 @@ Model each decision as **(principal, action, resource, context)**. For example: 
 
 ## When to use Amazon Verified Permissions
 
-Verified Permissions is a fine-grained application authorization service using Cedar policies. It can evaluate policies against Cognito identities and resource attributes, replacing or complementing custom authorization logic. The application still supplies trustworthy resource/context facts and enforces the result. Verified Permissions does not replace IAM for S3 or ECS.
+Verified Permissions is a fine-grained application authorization service using Cedar policies. It can evaluate policies against Cognito identities and resource attributes, replacing or complementing custom authorization logic. The application still supplies trustworthy resource/context facts and enforces the result. Verified Permissions does not replace IAM for S3 or ECS. See the [Amazon Verified Permissions guide](https://docs.aws.amazon.com/verifiedpermissions/latest/userguide/) for policy and integration details.
 
 ## A good SaaS default
 

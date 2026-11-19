@@ -6,7 +6,7 @@ IAM policies answer four questions: **who** (principal), **can do what** (action
 
 Attach this identity-based policy to a role to allow reading objects under one prefix:
 
-```json
+```json title="Read-only S3 role policy"
 {
   "Version": "2012-10-17",
   "Statement": [{
@@ -36,7 +36,7 @@ A role's **trust policy** says who may obtain role sessions. Its **permissions p
 
 Trust relationship for an ECS task role:
 
-```json
+```json title="ECS task role trust policy"
 {
   "Version": "2012-10-17",
   "Statement": [{
@@ -49,7 +49,7 @@ Trust relationship for an ECS task role:
 
 Separate permissions policy for that role:
 
-```json
+```json title="ECS task role permissions"
 {
   "Version": "2012-10-17",
   "Statement": [{
@@ -67,16 +67,19 @@ The container obtains task-role credentials through the ECS credential endpoint 
 | Task role | Application code in the container | S3 objects, Secrets Manager reads, SQS sends |
 | Task execution role | ECS/Fargate agent | Pull ECR image, send supported logs, resolve task-definition secrets |
 
-For boto3 `AccessDenied` in application code, inspect the task role first. A controlled diagnostic can show the AWS principal:
+For boto3 `AccessDenied` in application code, inspect the [ECS task role](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-iam-roles.html) first. A controlled diagnostic can show the AWS principal:
 
-```python
+```python title="diagnose_aws_identity.py"
 import boto3
 
 sts = boto3.client("sts")
 print(sts.get_caller_identity())  # Account, ARN, UserId
 
 s3 = boto3.client("s3")  # Uses task-role credentials automatically
-obj = s3.get_object(Bucket="example-review-docs", Key="private/report-123.pdf")
+obj = s3.get_object(
+    Bucket="example-review-docs",
+    Key="private/report-123.pdf",
+)
 ```
 
 Do not expose caller identity, exception details, or credentials to end users. Use controlled logs; never print secrets or session tokens.

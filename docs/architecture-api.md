@@ -33,11 +33,11 @@ The browser does not receive IAM credentials in this design.
 
 This illustrates the verification boundary using PyJWT. Production code also needs resilient JWKS caching/timeouts, structured errors, monitoring, rate limiting, and an explicit key rotation strategy.
 
-```python
+```python title="app/auth.py"
 # pip install fastapi "PyJWT[crypto]"
+import jwt
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.security import HTTPBearer
-import jwt
 
 app = FastAPI()
 bearer = HTTPBearer(auto_error=True)
@@ -48,13 +48,18 @@ ISSUER = f"https://cognito-idp.{REGION}.amazonaws.com/{POOL_ID}"
 JWKS_URL = f"{ISSUER}/.well-known/jwks.json"
 JWKS = jwt.PyJWKClient(JWKS_URL)
 
+
 def current_user(credentials=Depends(bearer)):
     try:
         token = credentials.credentials
         key = JWKS.get_signing_key_from_jwt(token).key
         claims = jwt.decode(
-            token, key, algorithms=["RS256"], issuer=ISSUER,
-            options={"verify_aud": False}
+            token,
+            key,
+            algorithms=["RS256"],
+            issuer=ISSUER,
+            # Access tokens use client_id rather than the ID token's aud claim.
+            options={"verify_aud": False},
         )
         if claims.get("token_use") != "access":
             raise ValueError("Not an access token")
@@ -63,6 +68,7 @@ def current_user(credentials=Depends(bearer)):
         return claims
     except (jwt.PyJWTError, ValueError):
         raise HTTPException(status_code=401, detail="Invalid token")
+
 
 @app.get("/me")
 def me(user=Depends(current_user)):
@@ -73,12 +79,16 @@ Verify required access-token scopes for each endpoint. Do not accept arbitrary a
 
 ## Project authorization is a separate check
 
-```python
+```python title="app/authorization.py"
 from fastapi import HTTPException
 
 # Pseudocode: scope the database lookup by both project and user.
-def require_project_role(db, project_id: str, user_sub: str,
-                         allowed_roles: set[str]):
+def require_project_role(
+    db,
+    project_id: str,
+    user_sub: str,
+    allowed_roles: set[str],
+):
     membership = db.find_membership(project_id, user_sub)
     if membership is None or membership.role not in allowed_roles:
         raise HTTPException(status_code=403, detail="Forbidden")
