@@ -6,83 +6,64 @@ When a request fails, locate the boundary that rejected it before changing permi
 
 ## 11.1 Find the failing hop
 
-Symptom | Likely cause | First check
-
-Login fails | User Pool settings, callback URL, | Cognito sign-in and app client — provider, MFA / grant config
-
-API returns 401 | JWT expired, bad signature, issuer, | API Gateway / backend token — audience/client or wrong token type     validation
-
-API returns 403 for a project | Missing scope, project membership, | App authorisation logs and — plan entitlement                        membership table
-
-AWS S3 returns AccessDenied from | Task role policy, bucket policy, KMS, | Caller identity and role policy — ECS                                            key ARN or SCP
-
-AssumeRole fails | Trust policy, principal permission, | Trust relationship and STS caller — condition mismatch
-
-Identity Pool credentials fail | User/identity-pool mismatch, role | Identity Pool config and role trust — mapping, wrong aud/amr, IAM policy
-
-Browser upload fails but role is | CORS, KMS, object key/prefix or | Network response, S3 request and — correct                                        missing permission                      CORS config
+| Symptom | Likely cause | First check |
+| --- | --- | --- |
+| Login fails | User Pool settings, callback URL, provider, MFA / grant config | Cognito sign-in and app client |
+| API returns 401 | JWT expired, bad signature, issuer, audience/client or wrong token type | API Gateway / backend token validation |
+| API returns 403 for a project | Missing scope, project membership, plan entitlement | App authorisation logs and membership table |
+| AWS S3 returns AccessDenied from ECS | Task role policy, bucket policy, KMS, key ARN or SCP | Caller identity and role policy |
+| AssumeRole fails | Trust policy, principal permission, condition mismatch | Trust relationship and STS caller |
+| Identity Pool credentials fail | User/identity-pool mismatch, role mapping, wrong aud/amr, IAM policy | Identity Pool config and role trust |
+| Browser upload fails but role is correct | CORS, KMS, object key/prefix or missing permission | Network response, S3 request and CORS config |
 
 ## 11.2 A disciplined debugging order
 
-1. Identify the rejected service: Cognito login? API Gateway? FastAPI? STS? S3? PostgreSQL?
+1. **Identify the rejected service:** Cognito login? API Gateway? FastAPI? STS? S3? PostgreSQL?
 
-2. Identify the principal: app user subject, JWT claims, AWS assumed-role ARN or Identity Pool identity ID.
+2. **Identify the principal:** app user subject, JWT claims, AWS assumed-role ARN or Identity Pool identity ID.
 
-3. Identify the action and resource: s3:GetObject on which ARN? projects/read for which endpoint? Which project ID?
+3. **Identify the action and resource:** `s3:GetObject` on which ARN? `projects/read` for which endpoint? Which project ID?
 
-4. Inspect all applicable controls: signature/claims; app membership; role trust; IAM policies; resource policy; boundaries/SCPs; KMS; network/CORS.
+4. **Inspect all applicable controls:** signature/claims; app membership; role trust; IAM policies; resource policy; boundaries/SCPs; KMS; network/CORS.
 
-5. Test and observe: AWS CLI caller identity; CloudTrail for AWS API calls; application logs for tenant decisions; IAM simulator with relevant conditions.
+5. **Test and observe:** AWS CLI caller identity; CloudTrail for AWS API calls; application logs for tenant decisions; IAM simulator with relevant conditions.
 
-6. Fix the narrowest issue: do not respond to an AccessDenied by adding Action: * , Resource: * .
+6. **Fix the narrowest issue:** do not respond to an AccessDenied by adding `Action: *`, `Resource: *`.
 
 ## 11.3 The six myths worth unlearning
 
-Myth | Correction
-
-“IAM does not authenticate.” | AWS IAM identities and STS credentials participate in — authentication; IAM also governs authorisation.
-
-“Cognito groups are IAM groups.” | Different systems; only explicit mapping / policy logic — connects them.
-
-“A Cognito token gives S3 access.” | Not by itself. Direct AWS calls require appropriate AWS — credentials, e.g., Identity Pool + IAM role.
-
-“A valid JWT means any project is accessible.” | Signature validity does not prove project membership or — object ownership.
-
-“The ECS execution role is the app role.” | Your code uses the ECS task role. The execution role — serves the ECS agent.
-
-“An IAM role permission policy lets anyone assume it.” | Role assumption is controlled by the trust policy (and — applicable caller permissions).
+| Myth | Correction |
+| --- | --- |
+| “IAM does not authenticate.” | AWS IAM identities and STS credentials participate in authentication; IAM also governs authorisation. |
+| “Cognito groups are IAM groups.” | Different systems; only explicit mapping / policy logic connects them. |
+| “A Cognito token gives S3 access.” | Not by itself. Direct AWS calls require appropriate AWS credentials, e.g., Identity Pool + IAM role. |
+| “A valid JWT means any project is accessible.” | Signature validity does not prove project membership or object ownership. |
+| “The ECS execution role is the app role.” | Your code uses the ECS task role. The execution role serves the ECS agent. |
+| “An IAM role permission policy lets anyone assume it.” | Role assumption is controlled by the trust policy (and applicable caller permissions). |
 
 ## 11.4 Diagnose by observing the failure boundary, not by guessing
 
 Suppose a customer reports “I cannot download my PDF”. The fastest path is to locate the first component that rejected the request. Was the HTTP 401 generated by FastAPI because the JWT failed validation? Was a 403 generated after a project-membership lookup? Did S3 reject the ECS task role? Those failures have different fixes, and broadening IAM will not fix an application 403.
 
-Observation | Likely boundary | Check first
-
-API 401 before database query | Token authentication | Authorization header, expiry, issuer, — token_use, client ID and relevant audience
-
-API 403 after successful JWT check | Application authorisation | Project membership, tenant ID, role — and subscription
-
-Backend boto3 AccessDenied | IAM / S3 / KMS | STS caller ARN, task role, S3 object — ARN, bucket policy, KMS
-
-Browser S3 SignatureDoesNotMatch | SigV4/presign request shape | Credential validity, signed headers, — region, URL encoding
-
-Browser blocked by CORS | Browser cross-origin rules | Bucket CORS; separately confirm — IAM/S3 permissions
-
-STS AssumeRole AccessDenied | Trust / caller permissions | Role trust principal, sts:AssumeRole , — conditions, SCP
-
-Observation | Likely boundary | Check first
-
-403 after removing user from project | May be correct! | Does app check live membership — rather than stale groups?
+| Observation | Likely boundary | Check first |
+| --- | --- | --- |
+| API 401 before database query | Token authentication | Authorization header, expiry, issuer, `token_use`, client ID and relevant audience |
+| API 403 after successful JWT check | Application authorisation | Project membership, tenant ID, role and subscription |
+| Backend boto3 AccessDenied | IAM / S3 / KMS | STS caller ARN, task role, S3 object ARN, bucket policy, KMS |
+| Browser S3 SignatureDoesNotMatch | SigV4/presign request shape | Credential validity, signed headers, region, URL encoding |
+| Browser blocked by CORS | Browser cross-origin rules | Bucket CORS; separately confirm IAM/S3 permissions |
+| STS AssumeRole AccessDenied | Trust / caller permissions | Role trust principal, `sts:AssumeRole`, conditions, SCP |
+| 403 after removing user from project | May be correct! | Does app check live membership rather than stale groups? |
 
 ## 11.5 A sample incident: the API can start but cannot read S3
 
 1. Read the application exception: identify the AWS operation and exact S3 key, without exposing sensitive values to users.
 
-2. Determine the credential principal using sts:GetCallerIdentity inside the task.
+2. Determine the credential principal using `sts:GetCallerIdentity` inside the task.
 
-3. Check the task definition’s taskRoleArn ; do not assume the execution role is used by boto3.
+3. Check the task definition’s `taskRoleArn`; do not assume the execution role is used by boto3.
 
-4. Check the task role’s IAM actions and object ARNs. Remember GetObject uses the object ARN, while ListBucket uses the bucket ARN.
+4. Check the task role’s IAM actions and object ARNs. Remember `GetObject` uses the object ARN, while `ListBucket` uses the bucket ARN.
 
 5. If the allow appears present, inspect explicit denies in the bucket policy, applicable organisation policies, session constraints and S3 VPC endpoint policy.
 
@@ -92,40 +73,28 @@ Observation | Likely boundary | Check first
 
 ## 11.6 A sample incident: “my user is an admin, why is the API 403?”
 
-The term admin is ambiguous. It might mean an IAM administrator in an AWS account, a Cognito User Pool group called admin , or an organisation administrator in your product database. None automatically implies the others. If the API 403 comes from require_project_role , inspect the application role and project relationship. If a user signs in through Cognito, that fact does not give them AWS AdministratorAccess or universal project access.
+The term `admin` is ambiguous. It might mean an IAM administrator in an AWS account, a Cognito User Pool group called `admin`, or an organisation administrator in your product database. None automatically implies the others. If the API 403 comes from `require_project_role`, inspect the application role and project relationship. If a user signs in through Cognito, that fact does not give them AWS `AdministratorAccess` or universal project access.
 
 ## 11.7 Policy simulator, Access Analyzer and CloudTrail have different jobs
 
-Tool / technique | What it is good at | Limit
+| Tool / technique | What it is good at | Limit |
+| --- | --- | --- |
+| IAM policy simulator | Testing selected IAM actions against policy context | Simulation might not capture every service-specific circumstance |
+| IAM Access Analyzer | Analysing external access and policy findings | Not a replacement for application permission tests |
+| CloudTrail | Auditing supported AWS API activity and principals | Does not automatically record FastAPI project-membership decisions |
+| Structured application logs | Explaining product authorisation outcomes | Must not leak tokens, secrets or sensitive file content |
+| Negative integration tests | Proving tenant and object isolation | Tests must model the real deployed policy context |
 
-IAM policy simulator | Testing selected IAM actions against | Simulation might not capture every — policy context                         service-specific circumstance
-
-IAM Access Analyzer | Analysing external access and policy | Not a replacement for application — findings                               permission tests
-
-CloudTrail | Auditing supported AWS API activity | Does not automatically record FastAPI — and principals                         project-membership decisions
-
-Structured application logs | Explaining product authorisation | Must not leak tokens, secrets or — outcomes                               sensitive file content
-
-Tool / technique | What it is good at | Limit
-
-Negative integration tests | Proving tenant and object isolation | Tests must model the real deployed — policy context
-
-Record a safe decision trace such as request_id=abc; subject_hash=...; project_id=42; action=read_document; decision=deny; reason=not_member . Keep the AWS role ARN and S3 request ID in controlled diagnostic logs. This is more useful than one generic “not authorised” message.
+Record a safe decision trace such as `request_id=abc; subject_hash=...; project_id=42; action=read_document; decision=deny; reason=not_member`. Keep the AWS role ARN and S3 request ID in controlled diagnostic logs. This is more useful than one generic “not authorised” message.
 
 ## 11.8 Security anti-patterns and their exact corrections
 
-Anti-pattern | Why it fails | Correct approach
-
-Create an IAM user for every customer | Wrong identity boundary; long-lived | User Pool for app users; roles for AWS — keys, operational burden                 access
-
-Hard-code access keys into React | Public client code exposes secrets | Identity Pool temporary credentials or — presigned URL
-
-Check JWT signature only | Wrong issuer/client/token type may | Validate full token contract and — slip through                             resource rights
-
-Grant s3:* on * to solve denied | Makes unrelated data and actions | Fix required action, object ARN and — upload                                         accessible                               policy conditions
-
-Treat Cognito group as project | Group does not encode each resource | API/database authorisation — membership                                     relationship
-
-Put all workload permissions on | Application SDK uses task role | Grant narrow access to task role — execution role
-
-Assume logout immediately invalidates | Unexpired token may still pass offline | Short lifetimes + revocation design — every locally checked JWT                      verification                             when necessary
+| Anti-pattern | Why it fails | Correct approach |
+| --- | --- | --- |
+| Create an IAM user for every customer | Wrong identity boundary; long-lived keys, operational burden | User Pool for app users; roles for AWS access |
+| Hard-code access keys into React | Public client code exposes secrets | Identity Pool temporary credentials or presigned URL |
+| Check JWT signature only | Wrong issuer/client/token type may slip through | Validate full token contract and resource rights |
+| Grant `s3:*` on `*` to solve denied upload | Makes unrelated data and actions accessible | Fix required action, object ARN and policy conditions |
+| Treat Cognito group as project membership | Group does not encode each resource relationship | API/database authorisation |
+| Put all workload permissions on execution role | Application SDK uses task role | Grant narrow access to task role |
+| Assume logout immediately invalidates every locally checked JWT | Unexpired token may still pass offline verification | Short lifetimes + revocation design when necessary |

@@ -6,35 +6,29 @@ Use this page as a design-review shortcut.
 
 ## 12.1 Which mechanism should you choose?
 
-If you need… | Start with… | Do not confuse it with…
-
-Customer login, password reset, | Cognito User Pool | IAM users for all customers — MFA, social sign-in
-
-Access-token scopes on your own | Cognito User Pool + JWT validation / | IAM S3 permissions — REST API                                       API authorizer
-
-Project ownership and team | Backend RBAC/ABAC checks + | Token validity alone — membership                                     database
-
-Browser calls S3 directly with SDK | Cognito Identity Pool + least- | User Pool alone — privilege IAM role
-
-Backend ECS service reads S3 | ECS task IAM role | Identity Pool or client secrets
-
-Engineer access to AWS accounts | IAM Identity Center + IAM roles | Customer User Pool
-
-Service calls your business API | OAuth client credentials (if | AWS STS credentials — appropriate)
-
-Service calls AWS API | Workload IAM role / STS | Cognito JWT
+| If you need… | Start with… | Do not confuse it with… |
+| --- | --- | --- |
+| Customer login, password reset, MFA, social sign-in | Cognito User Pool | IAM users for all customers |
+| Access-token scopes on your own REST API | Cognito User Pool + JWT validation / API authorizer | IAM S3 permissions |
+| Project ownership and team membership | Backend RBAC/ABAC checks + database | Token validity alone |
+| Browser calls S3 directly with SDK | Cognito Identity Pool + least-privilege IAM role | User Pool alone |
+| Backend ECS service reads S3 | ECS task IAM role | Identity Pool or client secrets |
+| Engineer access to AWS accounts | IAM Identity Center + IAM roles | Customer User Pool |
+| Service calls your business API | OAuth client credentials (if appropriate) | AWS STS credentials |
+| Service calls AWS API | Workload IAM role / STS | Cognito JWT |
 
 ## 12.2 Quick knowledge check
 
-Q1. Alice signs in with Cognito and receives an access token. Can she now call s3:ListBucket directly?
+!!! note ""
+    **Q1.** Alice signs in with Cognito and receives an access token. Can she now call `s3:ListBucket` directly?
 
-Q2. FastAPI checks Alice’s token and then reads S3. Which principal does S3 normally evaluate?
+    **Q2.** FastAPI checks Alice’s token and then reads S3. Which principal does S3 normally evaluate?
 
-Q3. A role has s3:GetObject permission but cannot be assumed. Which policy might be wrong?
+    **Q3.** A role has `s3:GetObject` permission but cannot be assumed. Which policy might be wrong?
 
-Q4. What protects Bob’s project from Alice when both users’ API tokens have projects/read ?
+    **Q4.** What protects Bob’s project from Alice when both users’ API tokens have `projects/read`?
 
-Q5. Where do temporary AWS access keys come from in the Identity Pool flow?
+    **Q5.** Where do temporary AWS access keys come from in the Identity Pool flow?
 
 ## 12.3 Answers
 
@@ -48,37 +42,33 @@ Q5. Where do temporary AWS access keys come from in the Identity Pool flow?
 
 5. AWS STS, via the configured Identity Pool flow and the selected IAM role.
 
-Final rule of thumb Ask three questions in order: (1) Who is calling? App user or AWS principal? (2) What is being called? Your API/business record or an AWS API? (3) Who makes the decision? Cognito token/API layer, your app policy, or IAM? This usually draws the boundary clearly.
+!!! note "Final rule of thumb"
+    Ask three questions in order: **(1) Who is calling?** App user or AWS principal? **(2) What is being called?** Your API/business record or an AWS API? **(3) Who makes the decision?** Cognito token/API layer, your app policy, or IAM? This usually draws the boundary clearly.
 
 ## 12.4 Case study: select the right architecture
 
-Scenario A - a React SaaS product. Users review papers, collaborate on projects, and upload PDFs. The backend is FastAPI on ECS and keeps metadata in PostgreSQL. Use a Cognito User Pool for user sign-in, FastAPI for JWT verification and project-level authorisation, and an ECS task role for AWS service calls. For uploads, prefer backend-authorised presigned URLs unless the client has a clear need for many direct AWS SDK operations.
+**Scenario A - a React SaaS product.** Users review papers, collaborate on projects, and upload PDFs. The backend is FastAPI on ECS and keeps metadata in PostgreSQL. Use a Cognito User Pool for user sign-in, FastAPI for JWT verification and project-level authorisation, and an ECS task role for AWS service calls. For uploads, prefer backend-authorised presigned URLs unless the client has a clear need for many direct AWS SDK operations.
 
-Scenario B - a field data-collection mobile client. The app must upload many files directly to a single per- device/user prefix and may use other AWS APIs. An Identity Pool can be justified, with narrow authenticated role policies and strict negative tests. The product still needs its own permission model for shared workspaces.
+**Scenario B - a field data-collection mobile client.** The app must upload many files directly to a single per-device/user prefix and may use other AWS APIs. An Identity Pool can be justified, with narrow authenticated role policies and strict negative tests. The product still needs its own permission model for shared workspaces.
 
-Scenario C - an analyst deploying to AWS. The analyst is a company employee, not an application customer. Use IAM Identity Center/workforce federation and a role/permission set for the AWS account. Do not grant AWS-console access by adding them to a Cognito User Pool group.
+**Scenario C - an analyst deploying to AWS.** The analyst is a company employee, not an application customer. Use IAM Identity Center/workforce federation and a role/permission set for the AWS account. Do not grant AWS-console access by adding them to a Cognito User Pool group.
 
 ## 12.5 Five worked exam questions
 
-Question | Worked answer
-
-A Cognito JWT is valid, but S3 denies GetObject. What is | If browser calls S3, it needs appropriate temporary AWS — missing?                                                       credentials and IAM permissions. If FastAPI calls S3, review the ECS task role and S3/KMS policies.
-
-A role policy permits GetObject, but STS will not assume the | Permissions on the target role govern what a resulting — role. Why?                                                     session may do, not who may assume it. Examine trust and caller-side AssumeRole permission.
-
-Alice can view a project; Bob gets 403 using the same API | Not necessarily. Application authorisation may correctly — endpoint. Is IAM misconfigured?                                deny Bob based on project membership, even though both tokens are valid.
-
-Developer can pull an ECS image but boto3 cannot fetch a | Image pulls typically use execution role. Runtime boto3 — secret. Which role?                                            secret reads use task role; check its Secrets Manager and KMS access.
-
-Question | Worked answer
-
-Could Cognito groups replace all project memberships? | Usually not for many dynamic user/project relations. Use — app DB or dedicated fine-grained authorisation and treat groups as one coarse input.
+| Question | Worked answer |
+| --- | --- |
+| A Cognito JWT is valid, but S3 denies GetObject. What is missing? | If browser calls S3, it needs appropriate temporary AWS credentials and IAM permissions. If FastAPI calls S3, review the ECS task role and S3/KMS policies. |
+| A role policy permits GetObject, but STS will not assume the role. Why? | Permissions on the target role govern what a resulting session may do, not who may assume it. Examine trust and caller-side AssumeRole permission. |
+| Alice can view a project; Bob gets 403 using the same API endpoint. Is IAM misconfigured? | Not necessarily. Application authorisation may correctly deny Bob based on project membership, even though both tokens are valid. |
+| Developer can pull an ECS image but boto3 cannot fetch a secret. Which role? | Image pulls typically use execution role. Runtime boto3 secret reads use task role; check its Secrets Manager and KMS access. |
+| Could Cognito groups replace all project memberships? | Usually not for many dynamic user/project relations. Use app DB or dedicated fine-grained authorisation and treat groups as one coarse input. |
 
 ## 12.6 The final three-minute explanation you should be able to give
 
-Amazon Cognito User Pools authenticate users of an application, provide managed sign-in features and issue signed tokens. Cognito Identity Pools optionally map an authenticated or guest identity to a role session with temporary AWS credentials for direct AWS calls. AWS IAM manages AWS principals, trust relationships, permissions and the evaluation of AWS service operations. STS supplies temporary credentials for assumed roles and related federation flows. Your application remains responsible for its own business authorisation - which user or organisation may read, edit or delete which product resource.
+**Amazon Cognito User Pools** authenticate users of an application, provide managed sign-in features and issue signed tokens. **Cognito Identity Pools** optionally map an authenticated or guest identity to a role session with temporary AWS credentials for direct AWS calls. **AWS IAM** manages AWS principals, trust relationships, permissions and the evaluation of AWS service operations. **STS** supplies temporary credentials for assumed roles and related federation flows. **Your application** remains responsible for its own business authorisation - which user or organisation may read, edit or delete which product resource.
 
-Self-assessment: can you trace all four identities? For a React user downloading a private PDF through FastAPI on ECS, state: (1) the Cognito sub , (2) the access-token claims the API validates, (3) the database membership rule that authorises the project, and (4) the IAM task-role session that AWS S3 actually evaluates. If you can identify all four without mixing them, the Cognito/IAM boundary is clear.
+!!! note "Self-assessment: can you trace all four identities?"
+    For a React user downloading a private PDF through FastAPI on ECS, state: (1) the Cognito `sub`, (2) the access-token claims the API validates, (3) the database membership rule that authorises the project, and (4) the IAM task-role session that AWS S3 actually evaluates. If you can identify all four without mixing them, the Cognito/IAM boundary is clear.
 
 ## References and further reading
 
