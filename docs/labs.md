@@ -1,42 +1,39 @@
-# 9. Guided labs
+# 14. Guided labs: learn by doing
 
-Use test accounts and harmless data. Do not put real access tokens on shared JWT decoding sites.
+## Lab A: an IAM-only service call (20–30 minutes)
 
-## Lab A: IAM-only service call (20–30 minutes)
+**Goal:** learn how an IAM role authenticates to AWS without Cognito.
 
-**Goal:** Learn how an IAM role authenticates to AWS without Cognito.
-
-1. Create a test S3 bucket with a small harmless file.
-2. Run Python in an ECS task or other AWS compute under a temporary-credential IAM role.
-3. Allow exactly `s3:GetObject` for one path and call `get_object`.
-4. Call `list_objects_v2`; expect denial unless `s3:ListBucket` is allowed.
-5. Use `get_caller_identity` to examine the assumed-role principal and compare it with the configured role.
+- Create a test S3 bucket with a small harmless file (avoid real sensitive data).
+- Run Python in an ECS task or another AWS compute service under a temporary-credential IAM role.
+- Allow exactly `s3:GetObject` for a single path and call `get_object`.
+- Call `list_objects_v2` on the bucket: expect an access denial unless `s3:ListBucket` is allowed.
+- Use `get_caller_identity` to examine the assumed-role principal; compare it with the configured role.
 
 ## Lab B: Cognito-only web login (30–45 minutes)
 
-**Goal:** Prove a User Pool JWT can authenticate to an API but cannot sign S3 AWS API requests.
+**Goal:** prove a User Pool JWT is enough for API login but not S3 AWS API signing.
 
-1. Create a test User Pool, public app client, and localhost callback; configure authorization-code flow with PKCE.
-2. Sign in through managed login and inspect token fields locally and safely.
-3. Call `/me` with an access token; try an expired or altered token and expect 401.
-4. Try direct S3 SDK access using only that JWT and no AWS credentials; AWS signing cannot be performed as an IAM principal.
+- Create a test User Pool, public app client and localhost callback; configure authorisation-code flow with PKCE.
+- Log in via managed login; inspect token fields (locally and safely). Never post real tokens to shared JWT decoding sites.
+- Call `/me` using an access token; try an expired or altered token: expect 401.
+- Try direct S3 AWS SDK access with only that JWT and no AWS credentials: signing cannot be performed as an IAM principal.
 
-## Lab C: Identity Pool and scoped S3 role (30–60 minutes)
+## Lab C: add an Identity Pool and scoped S3 role (30–60 minutes)
 
-**Goal:** Connect an app-user identity to temporary AWS credentials and understand role trust.
+**Goal:** connect an app-user identity to temporary AWS credentials and understand role trust.
 
-1. Create an Identity Pool linked to the User Pool, with an authenticated IAM role.
-2. Set trust conditions to the exact Identity Pool ID and authenticated state.
-3. Grant reads only for the identity-specific S3 prefix in [Architecture B](architecture-s3.md).
-4. Use an SDK Identity Pool credential provider; confirm own-prefix access works and another prefix fails.
-5. Remove S3 permission and observe `AccessDenied` while Cognito sign-in still works.
+- Create an Identity Pool linked to your User Pool, with an authenticated IAM role.
+- Set trust conditions to the exact Identity Pool ID and authenticated state.
+- Grant reads only for the identity-specific S3 prefix shown in Example 8.
+- Use an SDK identity-pool credential provider to obtain temporary AWS credentials; verify own-prefix read works and other-prefix read fails.
+- Remove the S3 permission and observe IAM AccessDenied while the user can still sign into Cognito.
 
-## Lab D: business authorization (30–45 minutes)
+## Lab D: add business authorisation (30–45 minutes)
 
-**Goal:** Demonstrate that Cognito group `reviewer` does not imply ownership of every project.
+**Goal:** demonstrate that Cognito group “reviewer” does not imply ownership of every project.
 
-1. Create two projects and two users; put both users in one global User Pool group.
-2. Give each user membership in only one project in database records.
-3. Confirm own-project access succeeds, other-project access fails, and removing membership revokes access regardless of the JWT group.
-4. Test a stale token after membership changes; the backend should use current database authorization.
-
+- Create two projects and two users; place both users in one global User Pool group.
+- Grant each user membership in only one project via database records.
+- Use tests: own project = allowed; other project = denied; removing membership revokes access irrespective of JWT group.
+- Test a stale token after membership change: backend must reflect current database authorisation.

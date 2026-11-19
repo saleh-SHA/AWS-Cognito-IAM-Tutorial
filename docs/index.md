@@ -1,57 +1,42 @@
----
-hide:
-  - toc
----
-
 <div class="home-hero">
   <div class="hero-copy">
-    <div class="eyebrow"><span class="eyebrow-dot"></span> FIELD GUIDE&nbsp; / &nbsp;IDENTITY + ACCESS</div>
+    <div class="eyebrow">Technical learning guide | 19 November 2026</div>
     <h1>AWS Cognito<br><span>vs AWS IAM</span></h1>
     <p class="hero-subtitle">A complete practical tutorial</p>
     <p class="hero-lede">Understand exactly where authentication ends, where authorisation begins, and how identity, tokens, roles, policies, and application-level permissions work together.</p>
-    <div class="hero-actions">
-      <a class="action-primary" href="foundations/">Start with the fundamentals <span aria-hidden="true">↗</span></a>
-      <a class="action-secondary" href="AWS_Cognito_vs_IAM_Practical_Tutorial.pdf">Get the PDF <span aria-hidden="true">↓</span></a>
-    </div>
-    <div class="hero-meta"><span>18 chapters</span><i></i><span>3 deployment patterns</span><i></i><span>Hands-on labs</span></div>
   </div>
-  <div class="hero-visual" aria-label="Identity and access flow illustration">
-    <div class="visual-top"><span>ONE REQUEST, THREE CHECKS</span><span class="live-dot"></span></div>
-    <div class="flow-stack">
-      <div class="flow-node"><div class="flow-icon user-icon">01</div><div><b>Person</b><small>Who is signing in?</small></div><span class="flow-tag">IDENTITY</span></div>
-      <div class="flow-link"><span></span><small>JWT</small></div>
-      <div class="flow-node"><div class="flow-icon app-icon">02</div><div><b>Your application</b><small>Can they access this project?</small></div><span class="flow-tag">BUSINESS RULES</span></div>
-      <div class="flow-link"><span></span><small>task role</small></div>
-      <div class="flow-node"><div class="flow-icon aws-icon">03</div><div><b>AWS service</b><small>Can this role read this object?</small></div><span class="flow-tag">IAM</span></div>
-    </div>
-    <div class="visual-foot"><span>AUTHENTICATION</span><span class="foot-line"></span><span>AUTHORIZATION</span></div>
+  <div class="hero-visual">
+    <div class="visual-top">Built around three realistic deployments</div>
+    <ol class="deployment-list">
+      <li>React + FastAPI + Cognito User Pool + PostgreSQL + S3</li>
+      <li>Direct browser-to-S3 access through Cognito Identity Pool + IAM</li>
+      <li>FastAPI on AWS ECS using task IAM roles to access AWS services</li>
+    </ol>
   </div>
 </div>
 
-<div class="signal-strip">
-  <div><span class="signal-number">01</span><span><b>Learn the boundary</b><small>Identity is not entitlement</small></span></div>
-  <div><span class="signal-number">02</span><span><b>Choose an architecture</b><small>Backend, direct S3, or workload</small></span></div>
-  <div><span class="signal-number">03</span><span><b>Build with confidence</b><small>Policies, labs, and diagnostics</small></span></div>
-</div>
+From fundamentals to production patterns, with architecture diagrams, working policy patterns, debugging strategies, review questions, and guided exercises.
 
-## Choose your architecture
+## Contents
 
-<div class="path-grid">
-  <a class="path-card path-featured" href="architecture-api/"><span class="card-kicker">PATTERN 01&nbsp; / &nbsp;MOST COMMON</span><span class="card-title">API-backed SaaS</span><span class="card-copy">Cognito signs users in. Your API checks project membership. An ECS task role accesses S3.</span><span class="card-bottom">React · FastAPI · PostgreSQL · S3 <b>↗</b></span></a>
-  <a class="path-card" href="architecture-s3/"><span class="card-kicker">PATTERN 02</span><span class="card-title">Direct browser-to-S3</span><span class="card-copy">Exchange a trusted identity for temporary, tightly scoped AWS credentials.</span><span class="card-bottom">Identity Pool · STS · IAM <b>↗</b></span></a>
-  <a class="path-card" href="architecture-workloads/"><span class="card-kicker">PATTERN 03</span><span class="card-title">AWS workloads</span><span class="card-copy">Give each service its own role and only the permissions its work requires.</span><span class="card-bottom">ECS · task roles · microservices <b>↗</b></span></a>
-</div>
+Begin with chapters 1–5 for the essential mental model; then choose the architecture and lab most relevant to your application. All code contains illustrative placeholders.
 
-## The mental model
-
-<div class="mental-model">
-  <div><span class="model-index">A</span><b>Cognito User Pool</b><p>Signs a person into your application and issues tokens.</p></div>
-  <div><span class="model-index">B</span><b>Your application</b><p>Decides which person can access which tenant, project, or record.</p></div>
-  <div><span class="model-index">C</span><b>IAM</b><p>Authenticates AWS requests and grants access to AWS resources.</p></div>
-</div>
-
-<div class="bottom-cta"><div><span class="card-kicker">START HERE</span><h3>First, separate the two questions.</h3><p>Who is making this request? And what are they allowed to do?</p></div><a href="foundations/">Explore the fundamentals <span>↗</span></a></div>
-
----
-
-<div class="home-note">Examples use illustrative resource names and policy values. Adapt and review them for your AWS account and threat model.</div>
+- [Contents](#contents) 2
+- [1. The boundary: authentication is not the same as authorisation](foundations.md#1-the-boundary-authentication-is-not-the-same-as-authorisation) 3
+- [2. Who uses which AWS identity service?](foundations.md#2-who-uses-which-aws-identity-service) 4
+- [3. Cognito User Pools: the application login system](cognito.md#3-cognito-user-pools-the-application-login-system) 4
+- [4. Cognito Identity Pools: the bridge to AWS credentials](cognito.md#4-cognito-identity-pools-the-bridge-to-aws-credentials) 5
+- [5. IAM foundations: principal, action, resource, condition](iam.md#5-iam-foundations-principal-action-resource-condition) 6
+- [6. IAM role assumption: trust policy vs permissions policy](iam.md#6-iam-role-assumption-trust-policy-vs-permissions-policy) 7
+- [7. IAM evaluation: why an Allow may still be denied](iam.md#7-iam-evaluation-why-an-allow-may-still-be-denied) 8
+- [8. Architecture A: React + Cognito + FastAPI + PostgreSQL](architecture-api.md#8-architecture-a-react-cognito-fastapi-postgresql) 9
+- [9. Architecture B: direct S3 access with Identity Pools](architecture-s3.md#9-architecture-b-direct-s3-access-with-identity-pools) 12
+- [10. Architecture C: roles for AWS workloads and microservices](architecture-workloads.md#10-architecture-c-roles-for-aws-workloads-and-microservices) 13
+- [11. Advanced IAM: least privilege, ABAC, and federation](advanced-iam.md#11-advanced-iam-least-privilege-abac-and-federation) 14
+- [12. Advanced application authorisation: groups are not enough](application-authorization.md#12-advanced-application-authorisation-groups-are-not-enough) 15
+- [13. Realistic setup walkthrough: secure SaaS API](walkthrough.md#13-realistic-setup-walkthrough-secure-saas-api) 16
+- [14. Guided labs: learn by doing](labs.md#14-guided-labs-learn-by-doing) 17
+- [15. Troubleshooting playbook](troubleshooting.md#15-troubleshooting-playbook) 19
+- [16. Security checklist and common mistakes](security.md#16-security-checklist-and-common-mistakes) 20
+- [17. Knowledge check: 12 questions with answers](knowledge-check.md#17-knowledge-check-12-questions-with-answers) 20
+- [18. Decision matrix, glossary, and official reading](reference.md#18-decision-matrix-glossary-and-official-reading) 21

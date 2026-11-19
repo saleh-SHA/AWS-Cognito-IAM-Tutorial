@@ -1,41 +1,43 @@
-# 6. Architecture B: direct S3 access with Identity Pools
+# 9. Architecture B: direct S3 access with Identity Pools
 
-A web app can let authenticated users read and upload files directly to a private S3 prefix. This can reduce API traffic, but needs explicit browser-side AWS credential handling, tightly scoped roles, and CORS configuration.
+Scenario: a web app lets authenticated users read and upload files directly to a private S3 prefix. This can reduce traffic through your API, but requires explicit browser-side AWS credential handling, carefully scoped roles and CORS configuration.
 
-```mermaid
-flowchart LR
-  UP[User Pool] -->|JWT| IP[Identity Pool]
-  IP -->|role mapping| STS[STS IAM session]
-  STS -->|temporary credentials / SigV4| S3[S3]
-  S3 -->|IAM check: GetObject / PutObject| Result[Allow or deny]
-```
+| User Pool | Identity Pool | STS IAM session | Amazon S3 |
+| --- | --- | --- | --- |
+| User signs in; obtains JWT | Exchanges token; role mapping | Short-lived AWS credentials | Checks GetObject / PutObject |
 
-## Trust one Identity Pool
+*Figure 5. AWS access is performed by a role session associated with the app user.*
 
-Example trust relationship for an authenticated Identity Pool role:
+## Role trust policy: tightly bind it to ONE Identity Pool
+
+*Example 7. The trust relationship of the authenticated Identity Pool role.*
 
 ```json
 {
   "Version": "2012-10-17",
-  "Statement": [{
-    "Effect": "Allow",
-    "Principal": {"Federated": "cognito-identity.amazonaws.com"},
-    "Action": "sts:AssumeRoleWithWebIdentity",
-    "Condition": {
-      "StringEquals": {
-        "cognito-identity.amazonaws.com:aud": "eu-west-2:11111111-2222-3333-4444-555555555555"
-      },
-      "ForAnyValue:StringLike": {
-        "cognito-identity.amazonaws.com:amr": "authenticated"
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {"Federated": "cognito-identity.amazonaws.com"},
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringEquals": {
+          "cognito-identity.amazonaws.com:aud": "eu-west-2:11111111-2222-3333-4444-555555555555"
+        },
+        "ForAnyValue:StringLike": {
+          "cognito-identity.amazonaws.com:amr": "authenticated"
+        }
       }
     }
-  }]
+  ]
 }
 ```
 
-The `aud` condition pins the role to the intended Identity Pool. The `amr` condition requires an authenticated identity. Keep these safeguards in place.
+The aud condition pins the role to the intended Identity Pool. The amr condition requires an authenticated identity. Do not remove these safeguards merely to make role assumption work.
 
-## Scope S3 to an identity-specific prefix
+## S3 permissions: isolate one identity per key prefix
+
+*Example 8. Policy variables scope S3 access to an Identity Pool identity.*
 
 ```json
 {
@@ -48,7 +50,9 @@ The `aud` condition pins the role to the intended Identity Pool. The `amr` condi
       "Resource": "arn:aws:s3:::example-user-files",
       "Condition": {
         "StringLike": {
-          "s3:prefix": ["users/${cognito-identity.amazonaws.com:sub}/*"]
+          "s3:prefix": [
+            "users/${cognito-identity.amazonaws.com:sub}/*"
+          ]
         }
       }
     },
@@ -62,15 +66,14 @@ The `aud` condition pins the role to the intended Identity Pool. The `amr` condi
 }
 ```
 
-For uploads, also enforce file size/type and ownership rules, encryption, lifecycle, and malware handling as appropriate. An IAM prefix policy alone does not cover every product security need. Identity Pool IDs differ from User Pool user IDs.
+For uploads, also enforce file size/type and ownership rules (application, bucket controls, upload workflow), encryption, lifecycle and malware handling as appropriate. Avoid assuming an IAM S3 prefix policy alone meets all product security needs. Identity IDs differ from User Pool user IDs.
 
-## Alternative: FastAPI presigned URLs
+## Alternative: a presigned URL from FastAPI
 
-For a private SaaS, a common choice is to check user/project permissions in FastAPI and issue a short-lived S3 presigned URL. The browser talks to S3 without receiving AWS credentials. The signing task role still needs the S3 permission. Constrain keys, expiry, upload verification, and content limits.
+The more common choice for a private SaaS is to check user/project permissions in FastAPI and issue a short-lived S3 presigned upload/download URL. Then the browser talks to S3 without receiving AWS credentials. The signing IAM task role still requires the relevant S3 permission. Use key constraints, short expiries, upload verification and content limits.
 
 | Choice | Pros | Trade-offs |
 | --- | --- | --- |
-| Identity Pool + client SDK | Native AWS access; user-specific IAM context | More client credential and IAM policy design |
-| API + presigned URLs | Central business checks; no browser AWS credentials | Backend issues URLs and must validate upload workflow |
-| API proxies file bytes | Simple control/logging in API | Uses API bandwidth and compute |
-
+| Identity Pool + client AWS SDK | Native AWS access; user-specific IAM context | More client credential and IAM policy design |
+| API + presigned URLs | Centralised business checks; no browser AWS credentials | Backend issues URLs and must validate upload workflow |
+| API proxies file bytes | Simple control/logging in API | Consumes API bandwidth and compute |

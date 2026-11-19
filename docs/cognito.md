@@ -1,61 +1,55 @@
-# 2. Cognito User Pools and Identity Pools
+# 3. Cognito User Pools: the application login system
 
-## User Pools: application login
+A User Pool is a managed user directory and an OAuth 2.0 / OpenID Connect identity provider. It can manage local users; federate Google, Microsoft, SAML and OIDC identities; issue JWTs; and apply MFA, account lifecycle and app-client configuration.
 
-A User Pool is a managed user directory and an OAuth 2.0 / OpenID Connect identity provider. It can manage local users; federate Google, Microsoft, SAML, and OIDC identities; issue JWTs; and apply MFA, account lifecycle, and app-client configuration. See the [Cognito User Pool guide](https://docs.aws.amazon.com/cognito/latest/developerguide/cognito-user-pools.html) for the full feature set.
-
-### The three important tokens
+## The three important tokens
 
 | Token | Purpose | Important caution |
 | --- | --- | --- |
-| ID token | Identity claims for the client, such as `sub`, email, and groups | Not a universal API permission grant. |
-| Access token | Access to protected APIs and OAuth scopes | Validate signature, issuer, time, `token_use=access`, and client. |
-| Refresh token | Obtains fresh tokens subject to session rules | Handle securely; never send as an API bearer token. |
+| ID token | Identity claims for the client (e.g., `sub`, email, groups) | Do not treat an ID token as a universal API permission grant. |
+| Access token | Authorise access to protected APIs / OAuth scopes | Validate `token_use=access`, issuer, `client_id`, signature and time. |
+| Refresh token | Obtains fresh tokens subject to session rules | Store/handle securely; do not send as API bearer token. |
 
-A User Pool app client identifies the application, not a human. For public browser/mobile clients, use a public client without a client secret and prefer authorization code flow with PKCE. A confidential backend client can hold its secret server-side. The [Cognito token guide](https://docs.aws.amazon.com/cognito/latest/developerguide/amazon-cognito-user-pools-using-tokens-verifying-a-jwt.html) covers token validation.
+A User Pool app client identifies the application, not a human. For public browser/mobile clients, use a public client without a client secret and prefer the authorisation-code flow with PKCE. For confidential backend clients, the client secret can be held securely server-side.
 
-```mermaid
-sequenceDiagram
-  actor User
-  participant Cognito as Cognito User Pool
-  participant React
-  participant API as FastAPI
-  User->>Cognito: Sign in (authorization code + PKCE)
-  Cognito-->>React: JWTs
-  React->>API: Request with access token
-  API->>API: Verify token and application permissions
-```
+| User signs in | Cognito User Pool | React application | FastAPI backend |
+| --- | --- | --- | --- |
+| Managed login + PKCE | Authenticates and issues JWT | Calls API with access token | Verifies token and checks DB |
 
-### Scopes, groups, and database roles
+*Figure 1. App-user sign-in without a Cognito Identity Pool.*
 
-- **OAuth scopes** express broad API permissions, such as `screening/read`; they are not normally per-project entitlements.
-- **User Pool groups** label users (for example, `reviewer` or `admin`) and may appear in token claims. A group does not automatically grant S3 rights or database-row access.
-- **Database membership** usually decides resource-level access: Alice may edit Project A but only view Project B. The backend checks the requested project and action.
+## Scopes vs groups vs database roles
 
-> Never let a user read every project just because they signed in or carry a broad role such as `reviewer`.
+- OAuth scopes express broad API permission claims, such as `screening/read`. They are not normally per-project entitlements.
+- User Pool groups label users as, for example, “reviewer” or “admin”, and may be emitted as token claims. Group names do not automatically grant S3 rights or database-row access.
+- Database membership usually decides resource-level rules: Alice may edit Project A but only view Project B. The backend must check the requested project and action.
 
-## Identity Pools: bridge to AWS credentials
+> **An anti-pattern**\
+> Never decide that a user may read any project merely because they have successfully signed in or because their token contains a broad role such as “reviewer”.
 
-An Identity Pool is different from a User Pool. It can accept a User Pool token or other supported identity evidence, select a role, and obtain temporary AWS credentials (commonly through AWS STS). Those credentials sign AWS API requests, which IAM evaluates. See [connecting User Pools to Identity Pools](https://docs.aws.amazon.com/cognito/latest/developerguide/amazon-cognito-integrating-user-pools-with-identity-pools.html) for the supported flow.
+# 4. Cognito Identity Pools: the bridge to AWS credentials
 
-```mermaid
-flowchart LR
-  UP[Cognito User Pool] -->|app-user JWT| IP[Cognito Identity Pool]
-  IP -->|role mapping| STS[AWS STS]
-  STS -->|temporary credentials| S3[S3 or AWS service]
-  S3 -->|IAM authorization| Result[Allow or deny]
-```
+An Identity Pool is different from a User Pool. It can accept a User Pool token or other supported identity-provider evidence, select a role, and obtain temporary AWS credentials for the app (commonly through AWS STS). These credentials are used to sign AWS API requests, which IAM evaluates.
 
-Use an Identity Pool when a mobile/web client must call selected AWS services directly under tightly scoped per-user AWS credentials. It is not needed when the browser only calls FastAPI and the backend uses its ECS task role. File upload alone does not require an Identity Pool: the backend can authorize the user and issue a short-lived S3 presigned URL.
+| Cognito User Pool | Cognito Identity Pool | AWS STS | S3 / AWS service |
+| --- | --- | --- | --- |
+| Valid app-user JWT | Map identity to IAM role | Temporary role credentials | Checks IAM authorisation |
 
-### JWTs are not AWS credentials
+*Figure 2. Identity Pools issue AWS credentials; User Pools do not.*
 
-| User Pool JWT | Temporary AWS credentials |
+## When do you need an Identity Pool?
+
+- Yes: your mobile/web client should call selected AWS services directly, under tightly scoped per-user AWS credentials.
+- No: your browser only calls your FastAPI backend and the backend calls AWS services using its own ECS task role. This is often the simpler design.
+- Not automatically: file upload itself does not require an Identity Pool. Your backend can issue short-lived S3 presigned URLs after performing its own user and project authorisation checks.
+
+## Temporary AWS credentials are not Cognito JWTs
+
+| JWT from User Pool | AWS temporary credentials |
 | --- | --- |
-| Usually a bearer token sent to APIs | Access key ID, secret access key, and session token |
+| Usually Bearer token sent to APIs | Access key ID + secret access key + session token |
 | Signed by Cognito (JWK/JWKS) | Used to sign AWS requests with SigV4 |
-| Carries identity/claim context | Represents an IAM role session |
-| Can be exchanged through an Identity Pool | Checked by IAM on AWS service requests |
+| Verifies identity/claim context | Represents an IAM role session |
+| Can be exchanged via Identity Pool | Checked by IAM on AWS service request |
 
-The `sub` in a User Pool token identifies a user in that User Pool. The policy variable `${cognito-identity.amazonaws.com:sub}` identifies an Identity Pool identity. They are not interchangeable.
-
+Subtle point: the `sub` in a User Pool token identifies a user in that User Pool. The policy variable `${cognito-identity.amazonaws.com:sub}` identifies an Identity Pool identity. They are not interchangeable.

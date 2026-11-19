@@ -1,21 +1,21 @@
-# Application authorization: groups are not enough
+# 12. Advanced application authorisation: groups are not enough
 
-Suppose Alice and Bob both belong to the `reviewer` group. Alice owns Project 101; Bob belongs only to Project 202. If an API authorizes based only on `reviewer` in token groups, both users may be able to see both projects. That is a broken object-level authorization vulnerability.
+Suppose Alice and Bob both belong to the “reviewer” group. Alice owns Project 101; Bob only belongs to Project 202. If the API authorises with "reviewer" in token.groups alone, both can potentially see both projects. That is a broken object-level authorisation vulnerability.
 
-Model each decision as **(principal, action, resource, context)**. For example: `(Alice, export_results, Project 101, paid subscription and active membership)`. Do not derive ownership from a client-supplied owner ID.
+## Model the access decision as a tuple
 
-| Request | Authentication | API authorization check | Outcome |
+Evaluate (principal, action, resource, context). Example: (Alice, export_results, Project 101, paid subscription and active membership). Do not derive ownership from a client-supplied owner ID.
+
+| Request | AuthN | API/AuthZ check | Outcome |
 | --- | --- | --- | --- |
-| Alice: `GET /projects/101` | Valid Cognito JWT | Alice belongs to Project 101 | 200 |
-| Bob: `GET /projects/101` | Valid Cognito JWT | Bob is not a member | 403 (or consistent 404 policy) |
-| Alice: `DELETE /projects/101` | Valid Cognito JWT | Alice is viewer, not owner | 403 |
-| Guest: `GET /projects/101` | No accepted token | Authentication fails | 401 |
+| Alice: GET /projects/101 | Valid Cognito JWT | Alice belongs to project 101 | 200 |
+| Bob: GET /projects/101 | Valid Cognito JWT | Bob is not a member | 403 (or consistent 404 policy) |
+| Alice: DELETE /projects/101 | Valid Cognito JWT | Alice has “viewer”, not “owner” | 403 |
+| Guest: GET /projects/101 | No accepted token | Fails authentication | 401 |
 
 ## When to use Amazon Verified Permissions
 
-Verified Permissions is a fine-grained application authorization service using Cedar policies. It can evaluate policies against Cognito identities and resource attributes, replacing or complementing custom authorization logic. The application still supplies trustworthy resource/context facts and enforces the result. Verified Permissions does not replace IAM for S3 or ECS. See the [Amazon Verified Permissions guide](https://docs.aws.amazon.com/verifiedpermissions/latest/userguide/) for policy and integration details.
+Verified Permissions is a fine-grained application-authorisation service using Cedar policies. It can evaluate policies against Cognito identities and resource attributes, replacing or complementing custom authorisation logic. Your application still supplies trustworthy resource/context facts and enforces the resulting Allow/Deny. It is not an IAM replacement for S3/ECS.
 
-## A good SaaS default
-
-Use Cognito for application sign-in; the application database or Verified Permissions for organization/project rights; and ECS task roles with IAM for AWS calls. Add Identity Pools only when the client genuinely requires direct AWS access.
-
+> **A good SaaS default**\
+> Cognito for application sign-in; application DB or Verified Permissions for organisation/project-level rights; ECS task roles and IAM for the AWS calls. Add Identity Pools only when the client genuinely requires direct AWS access.

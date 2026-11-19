@@ -1,43 +1,43 @@
-# 5. Architecture A: React + Cognito + FastAPI + PostgreSQL
+# 8. Architecture A: React + Cognito + FastAPI + PostgreSQL
 
-Consider a subscription-based AI literature screening platform with users, organizations, projects, screening results, and file attachments. Users authenticate with Cognito. Project data lives in PostgreSQL. The API runs on ECS and accesses private S3 objects.
+Scenario: a subscription-based AI literature screening platform has users, organisations, projects, screening results, and file attachments. Users authenticate with Cognito. Projects live in PostgreSQL. The API runs on ECS and accesses private S3 objects.
 
-```mermaid
-flowchart LR
-  R[React browser] -->|access token| API[FastAPI on ECS]
-  API -->|project membership query| DB[(PostgreSQL)]
-  API -->|ECS task role| S3[(Private S3 documents)]
-  UP[Cognito User Pool] -->|JWT| R
-```
+| React browser | FastAPI on ECS | PostgreSQL | S3 documents |
+| --- | --- | --- | --- |
+| Access token in API call | Verify JWT + project access | Owner/member roles | ECS task IAM role |
 
-The browser does not receive IAM credentials in this design.
+*Figure 4. The user does not get IAM credentials in this design.*
 
-## Request walkthrough: `GET /projects/42/documents`
+## Request walkthrough: GET /projects/42/documents
 
-1. React signs the user in through Cognito User Pool (authorization code + PKCE).
-2. React calls FastAPI with `Authorization: Bearer ACCESS_TOKEN`.
-3. FastAPI verifies JWT cryptography and required claims.
-4. FastAPI checks whether the token's `sub` belongs to Project 42 and may view its documents.
-5. FastAPI reads metadata from PostgreSQL and, if needed, retrieves S3 data using the ECS task role.
-6. IAM decides whether that task role may read the object. The API returns only authorized content.
+1. React signs the user in through Cognito User Pool (authorisation code + PKCE).
+2. React calls FastAPI with Authorization: Bearer ACCESS_TOKEN.
+3. FastAPI validates JWT cryptography and required claims.
+4. FastAPI checks whether `sub` belongs to project 42 and may view its documents.
+5. FastAPI reads metadata from PostgreSQL; if needed it retrieves S3 using the ECS task role.
+6. AWS IAM decides whether the task role may read the S3 object. The API returns only authorised content.
 
-| Component | Responsibility |
+## The precise responsibility split
+
+| Service/component | Responsible for |
 | --- | --- |
 | Cognito User Pool | User credentials, MFA, OIDC/JWT issuance |
-| FastAPI JWT middleware | Validates bearer token and coarse scopes |
-| FastAPI project check/database | Project access, tenant isolation, owner/editor/viewer roles |
-| ECS task role + IAM | Whether the backend can access the specified S3 bucket/object |
-| PostgreSQL | Stores project memberships, data, and permissions; does not automatically parse JWTs |
+| FastAPI JWT middleware | Validating bearer token + coarse scopes |
+| FastAPI project dependency / database | Project access (owner/editor/viewer, tenant isolation) |
+| ECS task role + IAM | Whether backend can access specified S3 bucket/object |
+| PostgreSQL | Stores project memberships, data and permissions; DB itself does not parse Cognito JWT automatically |
 
-## Minimal FastAPI token validation pattern
+## Minimal FastAPI pattern: JWT authentication
 
-This illustrates the verification boundary using PyJWT. Production code also needs resilient JWKS caching/timeouts, structured errors, monitoring, rate limiting, and an explicit key rotation strategy.
+The following illustrates a verification boundary using PyJWT. In production also build resilient JWKS caching/timeouts, structured errors, monitoring, rate limiting, and an explicit token and key rotation strategy.
 
-```python title="app/auth.py"
+*Example 5. Access token validation for a known User Pool/client.*
+
+```python
 # pip install fastapi "PyJWT[crypto]"
-import jwt
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.security import HTTPBearer
+import jwt
 
 app = FastAPI()
 bearer = HTTPBearer(auto_error=True)
@@ -58,7 +58,6 @@ def current_user(credentials=Depends(bearer)):
             key,
             algorithms=["RS256"],
             issuer=ISSUER,
-            # Access tokens use client_id rather than the ID token's aud claim.
             options={"verify_aud": False},
         )
         if claims.get("token_use") != "access":
@@ -75,14 +74,16 @@ def me(user=Depends(current_user)):
     return {"sub": user["sub"]}
 ```
 
-Verify required access-token scopes for each endpoint. Do not accept arbitrary algorithms or keys from a token. If multiple app clients are valid, use an explicit allow-list. Cognito access tokens generally use `client_id`; ID tokens use `aud`.
+Production note: verify the access token’s required API scopes for each endpoint; do not accept arbitrary algorithms or keys from a token. If you support multiple legitimate app clients, validate against an explicit allow-list. The Cognito access token generally uses `client_id`, whereas the ID token uses `aud`.
 
-## Project authorization is a separate check
+## Project-level authorisation must be a separate check
 
-```python title="app/authorization.py"
+*Example 6. User Pool identifies user; PostgreSQL decides project privilege.*
+
+```python
 from fastapi import HTTPException
 
-# Pseudocode: scope the database lookup by both project and user.
+# Pseudocode: DB function must scope by both project and user.
 def require_project_role(
     db,
     project_id: str,
@@ -94,10 +95,10 @@ def require_project_role(
         raise HTTPException(status_code=403, detail="Forbidden")
     return membership
 
-# GET project -> viewer, editor, owner
-# DELETE project -> owner only
-# POST document -> editor, owner
+# GET project -> roles viewer, editor, owner
+# DELETE project -> role owner only
+# POST document -> roles editor, owner
 ```
 
-The browser is not making AWS API requests here. It speaks only to FastAPI; FastAPI uses its task role. An Identity Pool would add credentials and policy complexity without solving project authorization.
-
+> **Why no Identity Pool?**\
+> The browser is not making any AWS API requests. It speaks only to FastAPI. Your FastAPI service uses its own IAM task role; adding a Cognito Identity Pool would introduce credentials and policy complexity without solving project authorisation.

@@ -1,40 +1,43 @@
-# 4. Advanced IAM: least privilege, ABAC, and federation
+# 11. Advanced IAM: least privilege, ABAC, and federation
 
-## RBAC and ABAC
+## Role-based access control (RBAC)
 
-Role-based access control (RBAC) uses separate roles or application permissions for job functions such as reader, editor, upload worker, and deployment operator. With an Identity Pool, user attributes or group claims can influence IAM role mapping. With a backend-only design, group claims alone do not create different ECS IAM roles for each request.
+Use separate roles or application permissions for different job functions: reader, editor, upload worker, deployment operator. With an Identity Pool, user attributes or group claims can influence IAM role mapping. With a backend-only architecture, group claims alone do not create different ECS IAM roles for each request.
 
-Attribute-based access control (ABAC) uses conditions on principal and resource tags. Identity Pools can map trusted claims into session `aws:PrincipalTag` values. ABAC requires disciplined attribute issuance, validation, tag governance, and denial when required tags are missing.
+## Attribute-based access control (ABAC)
 
-Illustrative policy: allow reading objects whose `department` tag matches the principal's department tag.
+IAM conditions can check principal tags and resource tags. Identity Pools can map trusted user claims into session `aws:PrincipalTag` values. ABAC is powerful but demands disciplined attribute issuance, validation, tag governance and denial for missing tags.
+
+*Example 9. Illustrative ABAC: read objects matching principal department tag.*
 
 ```json
 {
   "Version": "2012-10-17",
-  "Statement": [{
-    "Effect": "Allow",
-    "Action": "s3:GetObject",
-    "Resource": "arn:aws:s3:::example-dept-files/*",
-    "Condition": {
-      "StringEquals": {
-        "s3:ExistingObjectTag/department": "${aws:PrincipalTag/department}"
-      },
-      "Null": {"aws:PrincipalTag/department": "false"}
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::example-dept-files/*",
+      "Condition": {
+        "StringEquals": {
+          "s3:ExistingObjectTag/department": "${aws:PrincipalTag/department}"
+        },
+        "Null": {"aws:PrincipalTag/department": "false"}
+      }
     }
-  }]
+  ]
 }
 ```
 
-Tag patterns require compatible AWS actions and condition keys. Test them with the IAM policy simulator and real resources. Treat user-controlled attributes as untrusted unless their source and mapping are secured.
+Tag-based patterns require compatible AWS actions and condition keys; test with the IAM policy simulator and real resources. Treat user-controlled attributes as untrusted unless the source and mapping are secured.
 
-## Federation and cross-account roles
+## Federation and cross-account role use
 
-An external identity provider or account principal can assume an IAM role only when role trust and relevant caller-side permissions/conditions allow it. Use role-session names, external IDs where appropriate, bounded session duration, and CloudTrail for traceability. A Cognito user existing does not mean that user may assume any IAM role.
+An external identity provider or account principal can assume an IAM role only when role trust and relevant caller-side permissions/conditions allow it. Use role-session names, external IDs where appropriate, bounded session duration, and CloudTrail to maintain traceability. Never confuse “this user exists in Cognito” with “this user may assume any IAM role”.
 
-## Guardrails
+## Additional policy guardrails
 
-- **SCP:** limits maximum AWS permissions in a member account or OU; does not directly grant API calls.
-- **Permissions boundary:** limits a role/user's effective permissions; does not grant missing permissions.
-- **Resource policy:** can grant or restrict access on resources such as S3 buckets and KMS keys. Same-account and cross-account evaluation differ.
-- **Explicit deny:** investigate all applicable policies, including bucket, endpoint, organization, and key policies.
-
+- SCP: limits maximum AWS permissions in a member account/OU; cannot directly grant an API call.
+- Permissions boundary: limits a user/role’s effective permissions; cannot grant missing permissions.
+- Resource policy: can grant or restrict access on resources such as S3 buckets and KMS keys; same-account and cross-account evaluation differ.
+- Explicit Deny: investigate globally, including bucket policy, endpoint policy, SCP and any applicable policies.
