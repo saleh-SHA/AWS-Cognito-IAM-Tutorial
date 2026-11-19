@@ -1,14 +1,9 @@
----
-hide:
-  - navigation
-  - toc
----
-
 <div class="home-hero">
   <div class="hero-copy">
     <div class="eyebrow"><span class="eyebrow-dot"></span> FIELD GUIDE&nbsp; / &nbsp;IDENTITY + ACCESS</div>
-    <h1>Cognito identifies.<br><span>IAM grants access.</span></h1>
-    <p class="hero-lede">A practical guide to the boundary between application identity, AWS permissions, and the decisions your own product must make.</p>
+    <h1>AWS Cognito<br><span>vs AWS IAM</span></h1>
+    <p class="hero-subtitle">A complete practical tutorial</p>
+    <p class="hero-lede">Understand exactly where authentication ends, where authorisation begins, and how identity, tokens, roles, policies, and application-level permissions work together.</p>
     <div class="hero-actions">
       <a class="action-primary" href="foundations/">Start with the fundamentals <span aria-hidden="true">↗</span></a>
       <a class="action-secondary" href="AWS_Cognito_vs_IAM_Practical_Tutorial.pdf">Get the PDF <span aria-hidden="true">↓</span></a>
